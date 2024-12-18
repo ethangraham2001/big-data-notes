@@ -91,7 +91,7 @@ duplicate keys within the same tag**
 Attributes can also appear in an empty element tag
 
 ```xml
-<person age="1912/>
+<person age="1912">
 ```
 
 Note that we cannot nest within attribute values
@@ -131,7 +131,7 @@ Note that we can put comments wherever we want
 <!-- He totally is -->
 ```
 
-We can identify XML documents by an optional declaration containing the
+We can identify XML documents by an **optional** declaration containing the
 version number and encoding
 
 ```xml
@@ -141,3 +141,198 @@ version number and encoding
     <last>Einstein</last>
 </person>
 ```
+
+The `version` is either `1.0` or `1.1` for legacy reasons that we don't cover.
+The `encoding` is just a detail about physical storage. `UTF-8` recommended.
+
+Another optional tag is the doctype declaration - it must repeat the name of
+the top-level element.
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE person>
+<person birth="1879" death="1955">
+    <first>Albert</first>
+    <last>Einstein</last>
+</person>
+```
+
+or
+
+```xml
+<!DOCTYPE html>
+<html>
+    ...
+</html>
+```
+
+Doctypes also exist because of historical reasons.
+
+### Escape characters
+
+XML has a bunch of escape characters that need to be used - of course given
+that all elements are wrapped in `<>`, we can't use either of these. The ones
+listed in the course are
+
+- `<: &lt`
+- `>: &gt`
+- `": &quot`
+- `': &apos`
+- `&: &amp`
+
+We can use there anywhere in text and in attribute values, however they aren't
+recognized in element names, attribute names, or comments - the first of the
+two will lead to well-formedness check failures.
+
+Importantly, one should not that **well-formedness != validity** - validity
+requires a schema.
+
+### Overall structure
+
+![Overall structure of an XML](images/xml-structure.png)
+
+### Namespaces
+
+Namespaces are like Java packages, C++ namespaces, Python modules, ... In XML,
+namespaces are identified with a URI. Oftentimes, these start with `http://`,
+despite them not being accessible through a browser. This is similar to how
+Java uses the reverse URI notation for Java, e.g. `com.music-encodings.ns.mei`.
+
+Here is an example of this in practice:
+
+```xml
+<persons xmlns="http://www.example.com/persons">
+    <person>
+        <first>(some content)</first>
+        <last>(some other content)</last>
+    </person>
+    <person>
+        <first>(some content)</first>
+        <last>(some other content)</last>
+    </person>
+    <person>
+        <first>(some content)</first>
+        <last>(some other content)</last>
+    </person>
+</persons>
+```
+
+All of the `persons` live in the `http://www.example.com/persons` namespace.
+`xmlns` is **not an attribute**, it is in fact a namespace declaration.
+
+Were we to remove the `<persons xmlns=...> </persons>` tags, we would say that
+the namespace was _absent_ for the `<person></person>` elements.
+
+In a MathML document, we may get
+
+```xml
+<math xmlns="http://www.w3.org/1998/Math/MathML">
+    <apply>
+        <eq/>
+        <ci>x</ci>
+        <apply>
+            <root/>
+            <cn>2</cn>
+        </apply>
+    </apply>
+</math>
+```
+
+If we have multiple namespaces, we associate each of them with prefixes, which
+then act as shorthands for a namespace. A semantically equivalent doc to the 
+one before could look like the following, if we chose prefix `m`.
+
+```xml
+<m:math xmlns:m="http://www.w3.org/1998/Math/MathML">
+    <m:apply>
+        <m:eq/>
+        <m:ci>x</m:ci>
+        <m:apply>
+            <m:root/>
+        <m:cn>2</m:cn>
+        </m:apply>
+    </m:apply>
+</m:math>
+```
+
+In both cases, all the elements are in the MathML namespace.
+
+_Local name_ is the name that appears right of the prefix if it has one, or
+the entire name if it does not. Every element has a local name.
+
+We call the triplet `(namespace, prefix, localname)` the **QName** for 
+_qualified name_. If there is no prefix, then we look for the default 
+namespace and if we cannot find a default namespace, we call it absent.
+
+The following document is different to the previous two, as the namespace is
+absent
+
+```xml
+<math>
+    <apply>
+        <eq/>
+        <ci>x</ci>
+        <apply>
+            <root/>
+            <cn>2</cn>
+        </apply>
+    </apply>
+</math>
+```
+
+We can have as many namespaces or prefixes as we like with the QName machinery.
+
+```xml
+<?xml version "1.0"?>
+<a:bar
+    xmlns:a="http://example.com/a"
+    xmlns:b="http://example.com/b"
+    xmlns:c="http://example.com/c"
+    xmlns:d="http://example.com/d">
+        <b:foo/>
+        <c:bar>
+            <d:foo/>
+            <a:foobar/>
+        </c:bar>
+</a:bar>
+```
+
+As best practice, we should put our namespaces at the top-level. The following
+is, however, valid
+
+```xml
+<foo:bar xmlns:foo="http://example.com/foo">
+    <foo:foo/>
+        <bar:foobar xmlns:bar="http://example.com/bar">
+        <bar:foo/>
+        <foo:foo/>
+        <foo/>
+        <foo/>
+    </bar:foobar>
+    <foo xmlns="http://example.com/foo"/>
+    <foo:bar/>
+    <foo:bar xmlns:foo="http://example.com/bar"/>
+    <foo:foo/>
+</foo:bar>
+```
+
+Attributes can also live in namespaces, however we need to consider that
+unprefixed attribute names are **not sensitive to the default namespace**,
+i.e. for an unprefixed attribute, the namespace is always absent. Furthermore,
+it is possible for two attributes to collide if they have the same local name,
+and different prefixes associated with the same namespace _(should not do that
+anyways, but it can happen)_. Here is an example where the attributes live in a
+namespace.
+
+```xml
+<foobar foo:attr="value" bar:attr="value">
+```
+
+### Datasets in XML
+
+Both tabular data and nested data can be easily expressed in XML.
+
+### Summary
+
+To summarize, XML is better-suited for text-oriented tagged data because of its
+unique mixed-content feature. JSON is however much more popular nowadays.

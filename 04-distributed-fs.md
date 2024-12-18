@@ -48,7 +48,7 @@ these blocks occupying less space _(file sizes are seldom a perfect multiple of
 
 Blocks are replicated and stored on multiple nodes _(see next section)_. The
 number of times this is done is called the _replication factor_ and is
-tunable. **There is no primary replica** (no preference lists like S3).
+tunable. **There is no primary replica** (no preference lists like Dynamo).
 
 ## Physical architecture
 
@@ -66,7 +66,7 @@ file names, as well as any access-control information
 - Mapping from each file to the list of blocks composing it (64-bit identifier)
 - Mapping from each block to the list of DataNodes storing a copy.
 
-Clients connect to the NameNode via the clent protocol, and can perform 
+Clients connect to the NameNode via the client protocol, and can perform 
 metadata operations such as creating or deleting a directory. The NameNode 
 responds with the lists of DataNode locations for each block that the file
 consists of.
