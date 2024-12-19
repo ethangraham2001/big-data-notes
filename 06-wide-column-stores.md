@@ -207,3 +207,47 @@ HBlock holds the `KeyValues` for a specific key.
 
 In General, old data is persisted to HDFS in HFiles, and fresh data stays in
 memory on the RegionServer node.
+
+When accessing data, HBase needs to generally look everywhere for cell values,
+i.e. every HFile and in memory.
+
+As long as there is room in memory, fresh KeyValues are added there. When that
+is full _(or another limit is reached)_, we flush all KeyValues to a new HFile.
+We do this sequentially in ascending order, HBlock by HBlock _(sorting is done
+whenever a new KeyValue is added with a tree map for instance, so we needn't 
+do that here)_. We use a WAL to prevent loss when something crashes. We call 
+this the HLog. When the HLog is full, we flush all KeyValues in memory to a 
+new HFile. 
+
+After many flushes, the number of HFiles can grow - this becomes impractical.
+We do compaction when necessary. Since the data in the individual HFiles is
+sorted, we can merge in $O(n)$ time.
+
+## Bootstrapping lookups
+
+In order to know which RegionServer a client needs to communicat with, there is
+a big lookup table - this lookup table is also an HBase table, but it fits on
+a single machine. We call this the **meta table**.
+
+## Caching
+
+Instead of just keeping a MemStore in memory, we also have a cache.
+
+## Bloom filters
+
+We don't want to look for KeyValues in every HFile. We can basically tell you
+with absolute certainty if a key _doesn't_ belong to a given HFile, otherwise
+we have a _maybe_ - just look at the HFiles that maybe have the key. We can
+drastically reduce the search space.
+
+## Data Locality and Short Circuiting
+
+RegionServers are colocated with DataNodes _(same machine)_. So when we flush
+KeyValues to a new HFile, a replica of each HDFS Block of the HFile is written
+by the DataNode process living on the same machine. This makes accessing 
+KeyValues on local storage very efficient because there is no need to 
+communicate with the NameNode - we just read from local storage. We call this
+**short-circuiting** in HDFS.
+
+It is of course possible that some replicas will be relocated during 
+rebalancing of DataNodes, making short-circuiting not always possible.
