@@ -232,3 +232,7 @@ df = spark.read.text("hdfs:///dataset[0-7].txt")
 df = spark.read.jdbc("jdbc:postgresql://localhost/test?user=fred&password=secret", ...)
 df = spark.read.format("avro").load("hdfs:///dataset.avro")
 ```
+
+I won't spend loads of time covering the SparkSQL dialect, as it is pretty
+similar to SQL anyways, and the exercise session covers the subleties and
+DataFrame features.
