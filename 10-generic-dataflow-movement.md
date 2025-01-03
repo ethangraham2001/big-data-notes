@@ -1,4 +1,4 @@
-# 10 Generic Dataflow Movement
+# Generic Dataflow Movement
 
 MapReduce is very simple, but many complex use-cases will involve multi-job
 sequences. The API is also very low-level, which isn't always well-suited to

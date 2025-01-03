@@ -1,4 +1,4 @@
-# 03 Cloud Storage
+# Cloud Storage
 
 SQL doesn't scale. This becomes a problem when our dataset becomes huge. Some
 relational constraints make sense on clusters, but we will have to relax some
@@ -10,7 +10,7 @@ allow for nested and heterogeneous data! We call this data denormalization.
 
 We can pick two of the three from
 
-- _(atomic, eventual) consistency_
+- _(atomic, we will see that we can relax to eventual) consistency_
 - _availability_
 - _partition tolerance_: system continues to function even if the network
 linking its machines is occasionally partitioned.

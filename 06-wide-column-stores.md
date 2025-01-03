@@ -1,4 +1,4 @@
-# 06: Wide Column Stores
+# Wide Column Stores
 
 We looked into some textual formats in the previous section. How are these
 stored on a cluster?

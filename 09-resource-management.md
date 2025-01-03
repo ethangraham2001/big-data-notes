@@ -1,4 +1,4 @@
-# 09 Resource Management
+# Resource Management
 
 MapReduce is inefficient in several respects. For this reason, the architecture
 was fundamentally changed by decoupling scheduling and monitoring - enter YARN.

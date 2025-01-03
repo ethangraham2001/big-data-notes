@@ -1,4 +1,4 @@
-# 12 Querying Denormalized Data
+# Querying Denormalized Data
 
 Up until now, we saw that we can store denormalized data in either a data lake
 or in a managed DBMS like a document store. However, the options for querying

@@ -1,4 +1,4 @@
-# 07 Data Models and Validation
+# Data Models and Validation
 
 Everything, ultimately, is stored as binary. It isn't always appropriate for 
 the system to modify this directly - the spirit of data independence is to

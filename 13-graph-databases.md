@@ -1,4 +1,4 @@
-# 13 Graph Databases
+# Graph Databases
 
 Relational tables are very easy for us to wrap our heads around. However, the
 more we normalize our data to separate concerns, the more we end up having to

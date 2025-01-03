@@ -1,4 +1,4 @@
-# 02: Lessons Learned from the Past
+# Lessons Learned from the Past
 
 DBMS stack has four layers to it
 

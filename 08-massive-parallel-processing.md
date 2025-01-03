@@ -1,4 +1,4 @@
-# 08 Massive Parallel Processing
+# Massive Parallel Processing
 
 We covered how and where to store datasets, and we know how to model 
 heterogeneous data. We know how to build when applicable, and the various

@@ -1,4 +1,4 @@
-# 11 Document Stores
+# Document Stores
 
 The problem with what we discussed previously, is that a lot of Big Data 
 systems expose a pretty low-level interface. They function as a data lake, and

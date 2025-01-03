@@ -1,4 +1,4 @@
-# 04 Distributed File Systems
+# Distributed File Systems
 
 Previously, we discussed mechanisms that can store huge of large objects - such
 as S3 and Azure blob. In this section we will discuss large amount of huge

@@ -1,4 +1,4 @@
-# 05 Syntax
+# Syntax
 
 I'm not going to spend heaps of time on this because I feel that it lacks any
 meaningful substance.
