@@ -291,3 +291,155 @@ If a record is known to cause a crash of the mapper or reducer functions, this
 is flagged to the master so that it knows to skip that record.
 
 ## HBase: The Definitive Guide (Chapter 7)
+
+We define the various terms that are used to describe MapReduce.
+
+- **Splits:** the input will be split before being passed to the map task.
+    The `InputFormat` class is responsible for doing this. HBase provides tight
+    integration with MapReduce, and we can efficiently split an entire HBase
+    table.
+- **Mapper:** the `Mapper` classes are responsible for processing key-value 
+    pairs. There are some pre-defined ones that integrate with HBase, for 
+    example `IdentityTableMapper`.
+- **Reducer:** reducers receive random keys as input _(shuffled)_.
+- **OutputFormat:** Final stage of a MapReduce job persists the data in various
+    locations. HBase exposes `TableOutputFormat` class to write a specific
+    HBase output table.
+- **TableMapReduceUtil:** this is a class that helps set up MapReduce jobs over
+    HBase.
+
+Hadoop handled block replication automatically since everything is running on
+top of HDFS. Noting that a file will be split up into blocks sitting on HDFS
+DataNodes, we can choose to run out map tasks on those same nodes for better
+data locality. Because these blocks are replicated, we can even run these map
+tasks _(on the same block)_ in several different locations. Since HBase runs
+atop HDFS, using MapReduce with HBase provides similar guarantees, albeit more
+difficult to reason about given how it is hidden behind a layer of abstraction.
+
+## Apache Hadoop YARN: Yet Another Resource Negotiator
+
+- **ResourceManager:** tracks resource usage and node liveness, enforces
+    allocation invariants, arbitrates contention among tenants.
+- **ApplicationMaster:** requests resources from the ResourceManager, 
+    generates a physical plan, coordinates execution, handles fault tolerance
+
+The ResouceManager runs on a dedicated machine. It will schedule and 
+dynamically allocate **containers** to applications to run on a particular 
+node, which is leases out with a token. A container is just a logical bundle
+of resources, normally expressed in terms of `(RAM, CPU)`.
+
+Each node has a **NodeManager** which exchanges heartbeats with the 
+ResourceManager, and is responsible for monitoring resource availability,
+fault reporting, container life cycle management.
+
+Jobs are submitted to the ResourceManager - if accepted, and once there are
+sufficient resources available, these are scheduled. The ApplicationMaster can
+spawn the job on a node inside some container.
+
+Locality preferences are known by the ResourceManager which allows it to
+intelligently schedule jobs - for example when we want to schedule a MapReduce
+job close to the data. It also maintains a priority queue of jobs, first 
+scheduling jobs with a higher priority.
+
+Note that the ApplicationMaster itself is running inside of a container on the
+cluster. It should be resilient to failures, as it monitors the life cycle of
+a job. We can implement the ApplicationMaster however we like so long as its
+communication adheres to the standardized interface that YARN requires.
+
+The ResourceManager is a single point of failure in YARN. It can recover its
+state on startup by reading from persistent storage _(checkpoint)_.
+
+If a NodeManager fails, the ResourceManager marks all containers as killed.
+This happens when a hearbeat times out. The ApplicationMaster handles the 
+actual application-level fault-tolerance.
+
+## Dominant Resource Fairness: Fair Allocation of Multiple Resource Types
+
+**Intuition:** in a multi-resource environment, the allocation of a user should
+be determined by the user's dominant share, which is the maximum share of 
+something that the user has been allocated. DRF seeks to maximize the minimum
+dominant share.
+
+**Example:** if a job requires 10% of the total CPU and 30% of the available
+memory, the dominant resource is memory. We treat this job as requiring 30%
+of a node. Our scheduling decisions are based on this, where we try to maximize
+cluster utilization.
+
+The resource manager fulfills the following properties
+
+- **Sharing incentive:** user should be better off sharing than exlusively 
+    using their own partition of the cluster.
+- **Strategy-proofness:** user shouldn't benefit from lying about their 
+    resource requirements - allocation cannot be improved by lying.
+- **Envy-freeness:** A user should not prefer the allocation of another user.
+- **Pareto efficiency:** It should not be possible to increase the allocation
+    of a user without decreasing the allocation of at least one other user.
+- **Single resource fairness:** For a single resource, solution should be to
+    reduce max-min fairness
+- **Bottleneck fairness:** if there is one resource that is percent-wise 
+    demanded most by every user, then the solution should be to reduce to 
+    max-min fairness for that resource
+- **Population monotonicity:** When a user leaves the system and relenquishes
+    their resources, none of the allocations of the remaining users should
+    decrease.
+- **Resource monotonicity:** if more resources are added to the system, none of
+    the allocations of the existing users should decrease.
+
+## Resilient Distributed Datasets
+
+MapReduce lacks abstractions for leveraging distributed memory - the only way 
+to reuse data is to persist it in between computations. But data reuse data
+is important - want a computation graph, A DAG.
+
+**RDD:** read-only partitioned collection of records that can only be created
+through deterministic computation. We call these _transformations_, and we
+materialize through _actions_. These are much coarser-grained than DSM which
+allows reads / writes to individual memory addresses. This allows for efficient
+fault tolerance, and straggler mitigation. 
+
+RDDs are not suited for applications that make asynchronous fine-grained 
+updates to shared state. They are for efficent bulk transformations.
+
+The Spark programming interface is all transformations and actions on RDDs.
+Workers do the computation - they are long-lived processes that can store
+partitions in RAM across operations.
+
+- `partitions()`: return a list of partition objects
+- `preferredLocations(p)`: list nodes where partition `p` can be accessed 
+    faster due to data locality.
+- `dependencies()`: return a list of dependencies
+- `iterator(p, parentIters)`: compute the elements of partition `p` given
+    iterators for its parent partitions.
+- `partitioner()`: return metadata specifiying whether the RDD is hash/range
+    partitioned
+
+We define **narrow** and **wide** dependencies. Narrow dependencies are used by
+at most one partition of the child RDD, and wide dependencies are such that 
+multiple child RDDs may depend on it. Narrow dependencies preserve locality,
+and are very efficient to chain together.
+
+Narrow dependencies allow for pipelines execution on one cluster node, and
+handling node failures are more efficient as only the lost parent partitions
+need to be recomputed which can be done on different nodes. The lineage graph
+of a wide dependency may mean that a lost partition requires all of the 
+dependencies to be recomputed on a node failure.
+
+## Spark SQL: Relational Data Processing in Spark
+
+The Spark API is functional by design. We provide an interface that mixes
+relational and procedural - this is the Spark DataFrame API, and its optimizer
+Catalyst.
+
+The **DataFrame API** models a distributed collection of rows with the same
+schema. Logically just a relational table, but we do support nesting here.
+Operations are _lazy_ like RDDs in general, and only computed when an action is
+triggered.
+
+We have a DSL for dataframe operations. User-defined functions can be 
+registered in SparkSQL, and are inlined.
+
+The **Catalyst** optimizer, based largely on trees and rules to manipulate
+them.
+
+Schema inference is added, as well as integration with ML libraries allowing
+us to build ML pipelines.
