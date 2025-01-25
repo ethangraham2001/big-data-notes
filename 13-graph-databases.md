@@ -93,3 +93,123 @@ RETURN alpha, beta, gamma
 MATCH (alpha)-[*1..4]->(beta)<-[:B]-(alpha)
 RETURN alpha, beta
 ```
+
+## Stuff The Slides
+
+In this chapter, the slides go a lot deeper than the textbook does.
+
+Traversing a graph through a table is expensive, and requires joins. Graph DBs
+are a lot more expressive in this regard. We define **index-free adjacency**.
+
+We can represent node relationships in various ways, such as adjancency 
+matrices or incidence matrices.
+
+In a **labeled property graph**, such as we see in Neo4j, both nodes and edges
+hold _properties_. These are basically just key-values. Cypher, Neo4j's query
+language, defines `WITH` clauses that function similarly to JSONiq's `let`
+clauses.
+
+```cypher
+WITH [ 1, "foo", null, { foo: 1, bar: [ { foobar: TRUE} ] } ] AS list
+RETURN list [3].bar
+```
+
+Iteration also works similarly
+
+```cypher
+WITH [ { foo:1 }, { foo:2 }, { foo:3 } ] AS a
+UNWIND a as b
+RETURN b
+
+WITH [ { foo:1 }, { foo:2 }, { foo:3 } ] AS a
+UNWIND a as b
+WITH b.foo + 1 AS c
+RETURN [ c ]
+
+WITH [ { foo:1 }, { foo:2 }, { foo:3 } ] AS a
+UNWIND a as b
+WITH b.foo + 1 AS c
+WHERE c >= 3
+RETURN [ c ]
+```
+
+**anchoring** refers to finding the initial start nodes. This is done with a
+`MATCH` clause.
+
+```cypher
+// finding node with `name = Einstein` is the anchoring step
+MATCH (alpha {name: 'Einstein' })-[:A]->(beta)-[:B]->(gamma)
+RETURN gamma
+```
+
+We can combine `MATCH` and `WITH`
+
+```cypher
+MATCH (george {name: 'George'})<--(otherPerson)
+WITH otherPerson, toUpper(otherPerson.name) AS upperCaseName
+WHERE upperCaseName STARTS WITH 'C'
+RETURN otherPerson.name
+```
+
+The `CREATE` clause created a nodes, and edges between nodes.
+
+```cypher
+CREATE (einstein:Scientist {name: 'Einstein', first: 'Albert' }),
+       (eth:University {name: 'ETH Zurich' }),
+       (einstein)-[:VISITED]->(eth)
+```
+
+### RDF (Resource Description Framework)
+
+RDF is triple-based. We have `(subject, property, object)` triples. Literals
+in RDF include XML Schema types.
+
+We allow for blank nodes - these can be the subject or the object, but not
+the property.
+
+There are a few languages that we can use for expressing RDF.
+
+Turtle
+
+```turtle
+@prefix geo: <http://www.example.com/geography#> .
+@prefix countries: <http://www.example.com/countries#> .
+@prefix eth: <http://www.ethz.ch/#> .
+
+eth:self geo:isLocated countries:Switzerland .
+eth:self geo:population 25000 .
+```
+
+JSON-LD
+
+```json
+{
+    "@context": {
+    "eth": "http://www.ethz.ch/#",
+    "countries": "http://www.example.com/countries#"
+},
+    "@id" : "eth:self",
+    "geo:isLocatedIn": "countries:Switzerland",
+    "geo:isLocatedIn": "countries:Europe",
+    "geo:population" : 25000
+}
+```
+
+RDF-XML
+
+```xml
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:geo="http://www.example.com/geography#">
+    <rdf:Description rdf:about="http://www.ethz.ch/#self">
+        <geo:isLocatedIn rdf:resource="http://www.example.com/countries#Switzerland"/>
+        <geo:isLocatedIn rdf:resource="http://www.example.com/countries#Europe"/>
+        <geo:population>25000</geo:population>
+    </rdf:Description>
+</rdf:RDF>
+```
+
+Where `geo:isLocatedIn` corresponds to 
+`http://www.example.com/geography#isLocatedIn` in this case.
+
+RDF has no semantics - just triplets.

@@ -511,6 +511,32 @@ declaration with no name attribute.
 </xs:schema>
 ```
 
+`<xs:restriction>` and `<xs:extension>` are ways to build new types from 
+simpler ones. For example,
+
+```xml
+<!--creates a new type that contrains integers to the positives-->
+<xs:simpleType name="PositiveInteger">
+  <xs:restriction base="xs:integer">
+    <xs:minInclusive value="1"/>
+  </xs:restriction>
+</xs:simpleType>
+```
+
+```xml
+
+<!--Here, Employee extends Person by adding salary and department elements while 
+keeping all the elements from Person.-->
+<xs:complexType name="Employee">
+  <xs:extension base="Person">
+    <xs:sequence>
+      <xs:element name="salary" type="xs:decimal"/>
+      <xs:element name="department" type="xs:string"/>
+    </xs:sequence>
+  </xs:extension>
+</xs:complexType>
+```
+
 XML schema documents are XML documents themselves. Cool or something idk.
 
 ## Data Frames

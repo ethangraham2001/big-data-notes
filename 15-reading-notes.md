@@ -174,6 +174,45 @@ HDFS can interact with various file systems, as well as object stores. HDFS is
 implemented in Java, meaning these interactions are mediated through the Java
 API.
 
+## XML in a Nutshell (Chapter 17)
+
+Here we go over XML schemas - quite a shitstorm. No need for motivation here,
+let's just get into the nitty gritty.
+
+- `xsi:schemaLocation` attribute on an elemrn contains a list of namespaces
+    used within that element and the URI of the schemas with which to validate
+    elements and attributes in those namespaces.
+- `xsi:noNamespaceSchemaLocation` attribute contains a URI for the schema used
+    to validate elements that are not in any namespace.
+
+
+### Complex Types
+
+Simple types are the basic atomic building blocks. Complex types are just a 
+combination of different types. Think objects in OOP. Only elements can contain
+complex types, attributes always have simple types.
+
+### Simple Content
+
+`xs:simpleType` can define new simple data types, which can be referenced by
+both element and attribute declarations within the schema.
+
+```xml
+<xs:complexType name="contactsType">
+    <xs:sequence>
+        <xs:element name="phone" minOccurs="0">
+            <xs:attribute name="number" type="xs:string"/>
+            <xs:attribute name="location" type="addr:locationType"/>
+        </xs:element>
+    </xs:sequence>
+</xs:complexType>
+
+<!-- we define a simple type that is used by an attribute above -->
+<xs:simpleType name="locationType">
+    <xs:restriction base="xs:string"/>
+</xs:simpleType>
+```
+
 ## Bigtable: A Distributed Storage System for Structured Data
 
 BT does not provide a full relational model, instead exposing to clients a 
@@ -443,3 +482,77 @@ them.
 
 Schema inference is added, as well as integration with ML libraries allowing
 us to build ML pipelines.
+
+## MongoDB: The Definitive Guide (Chapters 3, 4 and 5)
+
+This covers some of the syntax that we see in MongoDB. The query API is very
+difficult to read, and easy to get wrong.
+
+```javascript
+// returns all documents where age == 27
+db.users.find({"age" : 27})
+
+// returns all documents where username == joe AND age == 27
+db.users.find({"username": "joe", "age": 27})
+
+// returns the user name and email of all documents, omitting the ID which is
+// always present by default
+db.users.find({}, {"username": 1, "email": 1, "_id": 0})
+```
+
+Now we move onto some more complex queries.
+
+```javascript
+// searches for elements fitting one out of a list of values
+db.users.find({"user_id": { "$in": [ 12345, "joe" ] }})
+
+// searches for elements where ticket_no == 725 OR winner == true
+db.raffles.find({"$or": [{"ticket_no": 725}, {"winner": true}]})
+
+// find users not older than 21
+db.users.find({ age: { $not: { $gt: 21 } } })
+
+// conditional semantics
+db.users.find({"age": { "$gt": 20, "$lt": 30 }})
+
+// we can use regex
+db.users.find({"name": "regexStuff"})
+```
+
+Querying in arrays works interestingly. When querying them, a result if found
+if one element in the array satisfies the condition. If we want all of them
+to satisfy the condition, then we must use `$all`.
+
+```javascript
+db.food.insert({"_id" : 1, "fruit" : ["apple", "banana", "peach"]})
+db.food.insert({"_id" : 2, "fruit" : ["apple", "kumquat", "orange"]})
+db.food.insert({"_id" : 3, "fruit" : ["cherry", "banana", "apple"]})
+
+db.food.find({fruit : {$all : ["apple", "banana"]}})
+// > {"_id" : 1, "fruit" : ["apple", "banana", "peach"]}
+// > {"_id" : 3, "fruit" : ["cherry", "banana", "apple"]
+```
+
+When we query without the `$all`, only documents where the array is an exact
+match will be returned - including the order.
+
+The `$size` operator can be used to look for arrays of a certain size, and the
+`$slice` operator can be used to slice an array.
+
+```javascript
+// returns 5 comments starting at index 10
+db.posts.find({}, { comments: { $slice: [10, 5] } })
+
+// matches posts that have exactly three comments
+db.posts.find({ comments: { $size: 3 } })
+```
+
+Querying embedded documents is a little counter-intuitive.
+
+```javascript
+// looks for an exact match `name == {"first": "Joe", "last": "Schmoe" }`
+db.people.find({"name" : {"first" : "Joe", "last" : "Schmoe"}})
+
+// looks for any document where first name is "Joe", last name is "Schmoe"
+db.people.find({"name.first": "Joe", "name.last": "Schmoe"})
+```
